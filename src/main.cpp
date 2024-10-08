@@ -296,6 +296,8 @@ int lastButtonState = LOW; // Previous reading from the input pin
 
 unsigned long lastDebounceTime = 0; // Time the button state was last changed
 unsigned long debounceDelay = 50;   // Debounce time in milliseconds
+String combinedData;
+
 void setup()
 {
   Serial.begin(9600);
@@ -356,12 +358,9 @@ void loop()
       if (buttonState == HIGH)
       {
         isRFIDMode = !isRFIDMode; // Toggle the value
-        SerialBT.print(tagEpcToString(tagEpc, epcLength));
-        SerialBT.print(",");
-        SerialBT.print(qr);
-        Serial.print(tagEpcToString(tagEpc, epcLength));
-        Serial.print(",");
-        Serial.print(qr);
+        combinedData = tagEpcToString(tagEpc, epcLength) + "," + qr;
+        SerialBT.print(combinedData);
+        Serial.print(combinedData);
       }
     }
   }
