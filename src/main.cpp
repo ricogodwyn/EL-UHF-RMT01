@@ -260,7 +260,6 @@ void printFrameData()
   Serial.println(frameEnd, HEX);
 }
 
-
 void qrRead()
 {
   if (Serial2.available())
@@ -269,7 +268,7 @@ void qrRead()
     Serial.println(qr);
   }
   delay(200);
-  displayData(tagEpc,epcLength);
+  displayData(tagEpc, epcLength);
 }
 void RFIDRead()
 {
@@ -321,7 +320,7 @@ void setup()
 
   delay(2000); // Pause for 2 seconds
   pinMode(PIN_EN, OUTPUT);
-  pinMode(buttonPin, OUTPUT);
+  pinMode(buttonPin, INPUT);
   clearSerial1Buffer();
   digitalWrite(PIN_EN, HIGH);
 
@@ -355,12 +354,13 @@ void loop()
       buttonState = reading;
 
       // Only toggle the value when the button is pressed (not released)
-      if (buttonState == HIGH)
+      if (buttonState == RISING)
       {
         isRFIDMode = !isRFIDMode; // Toggle the value
         combinedData = tagEpcToString(tagEpc, epcLength) + "," + qr;
         SerialBT.print(combinedData);
         Serial.print(combinedData);
+        Serial.print("change mode");
       }
     }
   }
