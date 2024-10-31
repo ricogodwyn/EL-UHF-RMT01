@@ -23,12 +23,12 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 #define FRAME_END 0x7E
 #define PIN_EN 4
 #define FRAME_PARAM_SINGLE_INV_EMPTY 0x15
-#define TIMEOUT_MS 1000 // Maximum wait time for data in milliseconds
+#define TIMEOUT_MS 500 // Maximum wait time for data in milliseconds
 
 uint8_t singleRead[7] = {HEADER, FRAME_TYPE_COMMAND, FRAME_CMD_SINGLE_INV,
                          0x00, 0x00, 0x22, FRAME_END};
 uint8_t multiRead[10] = {HEADER, FRAME_TYPE_COMMAND, FRAME_CMD_SINGLE_MULTI,
-                         0x00, 0x03, 0x22, 0x00, 0x10, 0x5c, FRAME_END};
+                         0x00, 0x03, 0x22, 0xff, 0xff, 0x4a, FRAME_END};
 
 uint8_t i;
 uint8_t crc;
@@ -50,10 +50,11 @@ BluetoothSerial SerialBT;
 // Function to send the inventory request frame
 void sendRequestFrame()
 {
-  for (i = 0; i < 7; i++) // ganti length sesuai mana yang dipake
+  for (i = 0; i < 10; i++) // ganti length sesuai mana yang dipake
   {
-    Serial1.write(singleRead[i]);
-    delay(50);
+    Serial1.write(multiRead[i]);
+    Serial.println(multiRead[i]);
+    // delay(10);
   }
 }
 
@@ -81,11 +82,11 @@ void clearSerial1Buffer()
     while (Serial1.available())
     {
       uint8_t data = Serial1.read();
-      //      if (data < 0x10) Serial.print("0");
-      //      Serial.print(data, HEX);
-      //      Serial.print(" ");
+          //  if (data < 0x8) Serial.print("0");
+          //  Serial.print(data, HEX);
+          //  Serial.print(" ");
     }
-    //    Serial.println();
+      //  Serial.println();
   }
 }
 // Function to read and validate the frame
@@ -234,6 +235,7 @@ String tagEpcToString(const uint8_t *data, uint8_t size)
 // Function to print the frame data
 void printFrameData()
 {
+  unsigned long startTime =millis();
   Serial.println("Received frame:");
   Serial.print("- Header: ");
   Serial.println(header, HEX);
@@ -242,22 +244,25 @@ void printFrameData()
   Serial.print("- Command: ");
   Serial.println(frameCmd, HEX);
   Serial.print("- Parameter length: ");
-  printBytes(framePl, 2);
+  // printBytes(framePl, 2);
   Serial.print("- RSSI: ");
   Serial.println(tagRssi - 255);
   Serial.print("- Tag PC: ");
-  printBytes(tagPc, 2);
+  // printBytes(tagPc, 2);
   Serial.print("- Tag EPC: ");
   printBytes(tagEpc, epcLength);
-  displayData(tagEpc, epcLength);
+  // displayData(tagEpc, epcLength);
   // display.setCursor(0, 0);
   // display.display();
   Serial.print("- Tag CRC: ");
-  printBytes(tagCrc, 2);
+  // printBytes(tagCrc, 2);
   Serial.print("- CRC: ");
   Serial.println(frameCrc, HEX);
   Serial.print("- End: ");
   Serial.println(frameEnd, HEX);
+  unsigned long processTime = millis() - startTime;
+  Serial.print("- ProcessTime: ");
+  Serial.println(processTime);
 }
 
 void qrRead()
@@ -272,21 +277,24 @@ void qrRead()
 }
 void RFIDRead()
 {
-  sendRequestFrame();
-
+  unsigned long startTime=millis();
   // Wait until data is available or timeout occurs
   if (!waitForSerialData(Serial1, TIMEOUT_MS))
   {
     Serial.println("Timeout: No data received.");
+    sendRequestFrame();
     return;
   }
 
   // Read and validate the frame
   if (!readAndValidateFrame())
     return;
-
+  
   // Print the received frame data
   printFrameData();
+  unsigned long processTime=millis()-startTime;
+  Serial.print("-Overall RFID Time: ");
+  Serial.println(processTime);
 }
 const int buttonPin = 2;
 bool isRFIDMode = true;
@@ -323,13 +331,14 @@ void setup()
   pinMode(buttonPin, INPUT);
   clearSerial1Buffer();
   digitalWrite(PIN_EN, HIGH);
-
+  
   display.clearDisplay();
   display.setTextSize(1);              // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE); // Draw white text
   display.setCursor(0, 0);             // Start at top-left corner
   display.print("Start Scanning...");
   display.display();
+  sendRequestFrame();
 }
 
 void loop()
@@ -369,7 +378,7 @@ void loop()
   lastButtonState = reading;
 
   // Add a small delay to avoid flooding the serial monitor
-  delay(500);
+  delay(50);
 
   // Continuously print based on the current mode
   if (isRFIDMode)
@@ -383,5 +392,5 @@ void loop()
     qrRead(); // Uncomment if needed
   }
 
-  delay(100); // Delay to avoid printing too fast (1 second delay)
+   // Delay to avoid printing too fast (1 second delay)
 }
