@@ -249,7 +249,7 @@ void printFrameData()
   printBytes(tagPc, 2);
   Serial.print("- Tag EPC: ");
   printBytes(tagEpc, epcLength);
-  displayData(tagEpc, epcLength);
+  // displayData(tagEpc, epcLength);
   // display.setCursor(0, 0);
   // display.display();
   Serial.print("- Tag CRC: ");
@@ -268,7 +268,7 @@ void qrRead()
     Serial.println(qr);
   }
   delay(200);
-  displayData(tagEpc, epcLength);
+   SerialBT.print(qr);
 }
 void RFIDRead()
 {
@@ -287,6 +287,7 @@ void RFIDRead()
 
   // Print the received frame data
   printFrameData();
+  SerialBT.print(tagEpcToString(tagEpc,epcLength));
 }
 const int buttonPin = 2;
 bool isRFIDMode = true;
@@ -336,52 +337,59 @@ void loop()
 {
   // Check if the button is pressed to toggle the mode
   // Read the state of the button
-  int reading = digitalRead(buttonPin);
+  // int reading = digitalRead(buttonPin);
 
-  // If the button state changed
-  if (reading != lastButtonState)
-  {
-    // Reset the debounce timer
-    lastDebounceTime = millis();
-  }
+  // // If the button state changed
+  // if (reading != lastButtonState)
+  // {
+  //   // Reset the debounce timer
+  //   lastDebounceTime = millis();
+  // }
 
-  // Check if the state has stabilized (debounced)
-  if ((millis() - lastDebounceTime) > debounceDelay)
-  {
-    // If the button state has changed
-    if (reading != buttonState)
-    {
-      buttonState = reading;
+  // // Check if the state has stabilized (debounced)
+  // if ((millis() - lastDebounceTime) > debounceDelay)
+  // {
+  //   // If the button state has changed
+  //   if (reading != buttonState)
+  //   {
+  //     buttonState = reading;
 
-      // Only toggle the value when the button is pressed (not released)
-      if (buttonState == RISING)
-      {
-        isRFIDMode = !isRFIDMode; // Toggle the value
-        combinedData = tagEpcToString(tagEpc, epcLength) + "," + qr;
-        SerialBT.print(combinedData);
-        Serial.print(combinedData);
-        Serial.print("change mode");
-      }
+  //     // Only toggle the value when the button is pressed (not released)
+  //     if (buttonState == RISING)
+  //     {
+  //       isRFIDMode = !isRFIDMode; // Toggle the value
+  //       combinedData = tagEpcToString(tagEpc, epcLength) + "," + qr;
+  //       SerialBT.print(combinedData);
+  //       Serial.print(combinedData);
+  //       Serial.print("change mode");
+  //     }
+  //   }
+  // }
+
+  // Save the current reading as the lastButtonState
+  // lastButtonState = reading;
+
+  // Add a small delay to avoid flooding the serial monitor
+  // delay(500);
+
+  // Continuously print based on the current mode
+  
+  // Check for serial input
+ if (SerialBT.available() > 0) {
+    char btInput = SerialBT.read();
+    if (btInput == 'r') {
+      isRFIDMode = true;
+      Serial.println("Switched to RFID mode");
+    } else if (btInput == 'q') {
+      isRFIDMode = false;
+      Serial.println("Switched to QR mode");
     }
   }
 
-  // Save the current reading as the lastButtonState
-  lastButtonState = reading;
-
-  // Add a small delay to avoid flooding the serial monitor
-  delay(500);
-
   // Continuously print based on the current mode
-  if (isRFIDMode)
-  {
-
+  if (isRFIDMode) {
     RFIDRead(); // Uncomment if needed
-  }
-  else
-  {
-
+  } else {
     qrRead(); // Uncomment if needed
   }
-
-  delay(100); // Delay to avoid printing too fast (1 second delay)
 }
