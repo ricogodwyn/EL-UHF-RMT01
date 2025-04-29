@@ -268,7 +268,7 @@ void qrRead()
     Serial.println(qr);
   }
   delay(200);
-   SerialBT.print(qr);
+   SerialBT.println(qr);
 }
 void RFIDRead()
 {
@@ -311,12 +311,6 @@ void setup()
   else
   {
     Serial.println("Bluetooth initialized");
-  }
-  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
-  { // Use the correct I2C address
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;)
-      ; // Don't proceed, loop forever
   }
 
   delay(2000); // Pause for 2 seconds
