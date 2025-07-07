@@ -192,28 +192,7 @@ void printBytes(const uint8_t *data, uint8_t size)
   Serial.println();
 }
 String qr;
-void displayData(const uint8_t *data, uint8_t size)
-{
-  display.clearDisplay();  // Clear the display buffer
-  display.setCursor(0, 0); // Set cursor to top-left corner
-  display.print("TagEPC:");
-  for (uint8_t i = 0; i < size; i++)
-  {
-    if (data[i] < 0x10)
-    {
-      display.print("0"); // Add leading zero for single digit hex values
-    }
-    display.print(data[i], HEX);
-    display.print(" ");
-    display.display(); // Update the display with the new data
-  }
-  display.setCursor(0, 16); // Assuming text size 1, each row is 8 pixels high
 
-  // Print QR data
-  display.print("QR: ");
-  display.print(qr);
-  display.display();
-}
 String tagEpcToString(const uint8_t *data, uint8_t size)
 {
   String result = "";
@@ -231,7 +210,7 @@ String tagEpcToString(const uint8_t *data, uint8_t size)
   }
   return result;
 }
-// Function to print the frame data
+
 void printFrameData()
 {
   Serial.println("Received frame:");
@@ -249,9 +228,6 @@ void printFrameData()
   printBytes(tagPc, 2);
   Serial.print("- Tag EPC: ");
   printBytes(tagEpc, epcLength);
-  // displayData(tagEpc, epcLength);
-  // display.setCursor(0, 0);
-  // display.display();
   Serial.print("- Tag CRC: ");
   printBytes(tagCrc, 2);
   Serial.print("- CRC: ");
@@ -262,14 +238,23 @@ void printFrameData()
 
 void qrRead()
 {
-  if (Serial2.available())
+  static String buffer = "";
+  while (Serial2.available())
   {
-    qr = Serial2.readString();
-    Serial.println(qr);
+    char c = Serial2.read();
+    buffer += c;
+
+    // Assuming QR code ends with '\r' or fixed length like 10
+    if (c == '\r') // or use: if (buffer.length() >= EXPECTED_QR_LENGTH)
+    {
+      qr = buffer;
+      Serial.println(qr);
+      SerialBT.println(qr);
+      buffer = ""; // reset for next read
+    }
   }
-  delay(200);
-   SerialBT.println(qr);
 }
+
 void RFIDRead()
 {
   sendRequestFrame();
@@ -319,56 +304,10 @@ void setup()
   clearSerial1Buffer();
   digitalWrite(PIN_EN, HIGH);
 
-  display.clearDisplay();
-  display.setTextSize(1);              // Normal 1:1 pixel scale
-  display.setTextColor(SSD1306_WHITE); // Draw white text
-  display.setCursor(0, 0);             // Start at top-left corner
-  display.print("Start Scanning...");
-  display.display();
 }
 
 void loop()
 {
-  // Check if the button is pressed to toggle the mode
-  // Read the state of the button
-  // int reading = digitalRead(buttonPin);
-
-  // // If the button state changed
-  // if (reading != lastButtonState)
-  // {
-  //   // Reset the debounce timer
-  //   lastDebounceTime = millis();
-  // }
-
-  // // Check if the state has stabilized (debounced)
-  // if ((millis() - lastDebounceTime) > debounceDelay)
-  // {
-  //   // If the button state has changed
-  //   if (reading != buttonState)
-  //   {
-  //     buttonState = reading;
-
-  //     // Only toggle the value when the button is pressed (not released)
-  //     if (buttonState == RISING)
-  //     {
-  //       isRFIDMode = !isRFIDMode; // Toggle the value
-  //       combinedData = tagEpcToString(tagEpc, epcLength) + "," + qr;
-  //       SerialBT.print(combinedData);
-  //       Serial.print(combinedData);
-  //       Serial.print("change mode");
-  //     }
-  //   }
-  // }
-
-  // Save the current reading as the lastButtonState
-  // lastButtonState = reading;
-
-  // Add a small delay to avoid flooding the serial monitor
-  // delay(500);
-
-  // Continuously print based on the current mode
-  
-  // Check for serial input
  if (SerialBT.available() > 0) {
     char btInput = SerialBT.read();
     if (btInput == 'r') {
